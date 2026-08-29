@@ -1,0 +1,14 @@
+# Arduino / PlatformIO build outputs
+.vscode/
+.bloop/
+build/
+*.bin
+*.elf
+*.hex
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and local session outputs
+*.log
