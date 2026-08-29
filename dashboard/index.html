@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Underground Rover Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen p-6">
+
+    <header class="max-w-7xl mx-auto mb-6 flex flex-wrap justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-lg gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="p-2.5 bg-blue-500/20 text-blue-400 rounded-xl border border-blue-500/30">
+                <i class="fa-solid fa-robot text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-wider">UNDERGROUND DIAGNOSTIC GUI</h1>
+                <p class="text-xs text-slate-400">SE ECS - Mini Project 1A Control Station</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <div class="bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl flex items-center space-x-2">
+                <i class="fa-solid fa-battery-three-quarters text-emerald-400"></i>
+                <span id="txtBattery" class="text-xs font-mono font-bold text-slate-200">12.2 V</span>
+            </div>
+
+            <div class="flex items-center space-x-2 bg-slate-950 border border-slate-800 p-1.5 rounded-xl">
+                <span class="text-xs text-slate-400 font-mono pl-2">ROVER IP:</span>
+                <input type="text" id="ipInput" value="192.168.1.40" class="bg-slate-900 border border-slate-700 text-xs text-blue-400 font-mono px-2.5 py-1 rounded-lg w-32 focus:outline-none">
+                <button onclick="updateRoverIp()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold">Connect</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <section class="lg:col-span-2 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h2 class="text-sm font-bold text-slate-200 flex items-center">
+                    <i class="fa-solid fa-video text-blue-500 mr-2"></i>IR / Low-Light Camera Stream
+                </h2>
+                <span id="connStatus" class="text-[11px] bg-emerald-950 text-emerald-400 border border-emerald-800/40 px-2.5 py-0.5 rounded-full font-mono">
+                    CONNECTED
+                </span>
+            </div>
+
+            <div class="relative bg-black rounded-xl overflow-hidden border border-slate-800 aspect-video flex items-center justify-center">
+                <img id="camFeed" src="http://192.168.1.40:81/stream" crossorigin="anonymous" class="w-full h-full object-contain">
+            </div>
+        </section>
+
+        <section class="space-y-6">
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h2 class="text-sm font-bold text-slate-200 flex items-center">
+                        <i class="fa-solid fa-gamepad text-blue-500 mr-2"></i>Drive Controls
+                    </h2>
+                    <span id="joyState" class="text-xs bg-slate-800 border border-slate-700 px-2 py-0.5 rounded font-mono text-slate-400">STOPPED</span>
+                </div>
+
+                <div class="relative bg-slate-950 border border-slate-800 rounded-xl h-44 flex items-center justify-center">
+                    <div id="joystickZone" class="w-full h-full"></div>
+                </div>
+
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                    <div class="flex justify-between items-center text-xs font-mono">
+                        <span class="text-slate-400">MOTOR SPEED PWM:</span>
+                        <span id="speedVal" class="text-blue-400 font-bold">200 (78%)</span>
+                    </div>
+                    <input type="range" id="speedSlider" min="0" max="255" value="200" onchange="updateSpeed(this.value)" class="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-3">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h2 class="text-sm font-bold text-slate-200 flex items-center">
+                        <i class="fa-solid fa-smog text-amber-500 mr-2"></i>MQ-4/7 Gas Telemetry
+                    </h2>
+                    <span id="gasBadge" class="text-[11px] bg-emerald-950 text-emerald-400 border border-emerald-800/40 px-2.5 py-0.5 rounded-full font-mono">SAFE</span>
+                </div>
+                <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex justify-between items-center">
+                    <span class="text-xs text-slate-400 font-mono">HAZARDOUS GAS:</span>
+                    <span id="txtGas" class="text-base font-mono font-bold text-emerald-400">120 PPM</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="lg:col-span-3 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h2 class="text-sm font-bold text-slate-200 flex items-center">
+                    <i class="fa-solid fa-route text-blue-500 mr-2"></i>Location Tracking of the Rover (IMU & ToF Map)
+                </h2>
+                <button onclick="resetPathCanvas()" class="text-[11px] bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-3 py-1 rounded-lg font-mono">Reset Map</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="md:col-span-3 bg-slate-950 border border-slate-800 rounded-xl p-2 relative h-64">
+                    <canvas id="pathCanvas" class="w-full h-full rounded-lg bg-slate-950"></canvas>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                        <p class="text-[10px] text-slate-400 font-mono">POSITION (X, Y)</p>
+                        <p id="txtCoord" class="text-sm font-mono font-bold text-blue-400 mt-1">X: 0.00 m | Y: 0.00 m</p>
+                    </div>
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                        <p class="text-[10px] text-slate-400 font-mono">UNDERGROUND DEPTH</p>
+                        <p id="txtDepth" class="text-sm font-mono font-bold text-amber-400 mt-1">0.00 m</p>
+                    </div>
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                        <p class="text-[10px] text-slate-400 font-mono">TOTAL DISTANCE</p>
+                        <p id="txtDistance" class="text-sm font-mono font-bold text-emerald-400 mt-1">0.00 m</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="lg:col-span-3 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h2 class="text-sm font-bold text-slate-200 flex items-center">
+                    <i class="fa-solid fa-clock text-blue-500 mr-2"></i>Operation Session & History Tracker
+                </h2>
+                <span id="sessionStatus" class="text-[11px] bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full font-mono">OFFLINE</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800"><p class="text-[10px] text-slate-400 font-mono">START TIME</p><p id="txtStart" class="text-sm font-mono font-bold mt-1">--:--:--</p></div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800"><p class="text-[10px] text-slate-400 font-mono">END TIME</p><p id="txtEnd" class="text-sm font-mono font-bold mt-1">--:--:--</p></div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800"><p class="text-[10px] text-slate-400 font-mono">DURATION</p><p id="txtDuration" class="text-sm font-mono font-bold text-blue-400 mt-1">00:00:00</p></div>
+                <div class="flex space-x-2">
+                    <button id="btnStart" onclick="startSession()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl">Start Session</button>
+                    <button id="btnEnd" onclick="endSession()" disabled class="flex-1 bg-slate-800 text-slate-500 text-xs font-bold rounded-xl border border-slate-700 cursor-not-allowed">End Session</button>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <div class="bg-slate-950 rounded-xl border border-slate-800 overflow-x-auto">
+                    <table class="w-full text-left text-xs font-mono text-slate-300">
+                        <thead class="bg-slate-900 border-b border-slate-800 text-slate-400">
+                            <tr>
+                                <th class="p-2.5">#</th><th class="p-2.5">DATE</th><th class="p-2.5">START</th><th class="p-2.5">END</th>
+                                <th class="p-2.5">DURATION</th><th class="p-2.5">DISTANCE</th><th class="p-2.5">MAX GAS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sessionLogTable">
+                            <tr><td colspan="7" class="p-4 text-center text-slate-500">No session logs recorded yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        let currentIp = "192.168.1.40";
+        let motorSpeed = 200, currentCmd = "STOP";
+        let sessionActive = false, startTime = null, timerInt = null, telemetryInt = null;
+        let pathPoints = [{ x: 0, y: 0 }], totalDist = 0, currentX = 0, currentY = 0, maxGas = 0;
+
+        const pCanvas = document.getElementById('pathCanvas');
+        const pCtx = pCanvas.getContext('2d');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            resizeCanvas();
+            drawMap();
+            loadLogs();
+        });
+
+        function resizeCanvas() {
+            pCanvas.width = pCanvas.parentElement.clientWidth;
+            pCanvas.height = pCanvas.parentElement.clientHeight;
+            drawMap();
+        }
+
+        function updateRoverIp() {
+            currentIp = document.getElementById('ipInput').value.trim();
+            document.getElementById('camFeed').src = `http://${currentIp}:81/stream`;
+        }
+
+        async function fetchTelemetry() {
+            if (!sessionActive) return;
+            try {
+                const res = await fetch(`http://${currentIp}/telemetry`);
+                const data = await res.json();
+
+                currentX = data.x; currentY = data.y;
+                totalDist = data.distance;
+                if (data.gasPPM > maxGas) maxGas = data.gasPPM;
+
+                pathPoints.push({ x: currentX, y: currentY });
+
+                document.getElementById('txtCoord').textContent = `X: ${currentX.toFixed(2)} m | Y: ${currentY.toFixed(2)} m`;
+                document.getElementById('txtDepth').textContent = `${data.depth.toFixed(2)} m`;
+                document.getElementById('txtDistance').textContent = `${totalDist.toFixed(2)} m`;
+                document.getElementById('txtGas').textContent = `${Math.round(data.gasPPM)} PPM`;
+                document.getElementById('txtBattery').textContent = `${data.battery.toFixed(1)} V`;
+
+                drawMap();
+            } catch (e) {}
+        }
+
+        function drawMap() {
+            const w = pCanvas.width, h = pCanvas.height, cx = w / 2, cy = h / 2, scale = 25;
+            pCtx.clearRect(0, 0, w, h);
+
+            pCtx.strokeStyle = "#1e293b";
+            for (let x = 0; x < w; x += 30) { pCtx.beginPath(); pCtx.moveTo(x, 0); pCtx.lineTo(x, h); pCtx.stroke(); }
+            for (let y = 0; y < h; y += 30) { pCtx.beginPath(); pCtx.moveTo(0, y); pCtx.lineTo(w, y); pCtx.stroke(); }
+
+            if (!pathPoints.length) return;
+
+            pCtx.strokeStyle = "#3b82f6"; pCtx.lineWidth = 3;
+            pCtx.beginPath();
+            pCtx.moveTo(cx + pathPoints[0].x * scale, cy - pathPoints[0].y * scale);
+            for (let i = 1; i < pathPoints.length; i++) {
+                pCtx.lineTo(cx + pathPoints[i].x * scale, cy - pathPoints[i].y * scale);
+            }
+            pCtx.stroke();
+
+            pCtx.fillStyle = "#10b981"; pCtx.beginPath(); pCtx.arc(cx, cy, 6, 0, Math.PI * 2); pCtx.fill();
+
+            const last = pathPoints[pathPoints.length - 1];
+            pCtx.fillStyle = "#60a5fa"; pCtx.beginPath(); pCtx.arc(cx + last.x * scale, cy - last.y * scale, 7, 0, Math.PI * 2); pCtx.fill();
+        }
+
+        function resetPathCanvas() {
+            pathPoints = [{ x: 0, y: 0 }];
+            currentX = 0; currentY = 0; totalDist = 0;
+            drawMap();
+        }
+
+        const manager = nipplejs.create({
+            zone: document.getElementById('joystickZone'),
+            mode: 'static', position: { left: '50%', top: '50%' }, color: '#3b82f6', size: 100
+        });
+
+        manager.on('move', (e, data) => {
+            if (data.direction) {
+                let dir = data.direction.angle.toUpperCase();
+                if (dir === "UP") dir = "FORWARD"; if (dir === "DOWN") dir = "BACKWARD";
+                if (currentCmd !== dir) { currentCmd = dir; sendCmd(currentCmd); }
+            }
+        });
+        manager.on('end', () => { currentCmd = "STOP"; sendCmd("STOP"); });
+
+        function sendCmd(cmd) {
+            document.getElementById('joyState').textContent = cmd;
+            fetch(`http://${currentIp}/cmd?dir=${cmd.toLowerCase()}&speed=${motorSpeed}`, { mode: 'no-cors' }).catch(e => {});
+        }
+
+        function updateSpeed(v) { motorSpeed = v; document.getElementById('speedVal').textContent = `${v} (${Math.round((v/255)*100)}%)`; }
+
+        function startSession() {
+            sessionActive = true; startTime = new Date(); maxGas = 0; resetPathCanvas();
+            document.getElementById('txtStart').textContent = startTime.toLocaleTimeString();
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('btnEnd').disabled = false;
+            document.getElementById('btnEnd').className = "flex-1 bg-rose-600 text-white text-xs font-bold rounded-xl";
+            
+            timerInt = setInterval(() => {
+                const sec = Math.floor((new Date() - startTime)/1000);
+                document.getElementById('txtDuration').textContent = new Date(sec * 1000).toISOString().substr(11, 8);
+            }, 1000);
+
+            telemetryInt = setInterval(fetchTelemetry, 250);
+        }
+
+        function endSession() {
+            sessionActive = false; clearInterval(timerInt); clearInterval(telemetryInt);
+            const endTime = new Date();
+            document.getElementById('txtEnd').textContent = endTime.toLocaleTimeString();
+
+            const sessionLog = {
+                date: startTime.toLocaleDateString(),
+                start: startTime.toLocaleTimeString(),
+                end: endTime.toLocaleTimeString(),
+                duration: document.getElementById('txtDuration').textContent,
+                distance: `${totalDist.toFixed(2)} m`,
+                maxGas: `${Math.round(maxGas)} PPM`
+            };
+
+            let logs = JSON.parse(localStorage.getItem('roverLogs')) || [];
+            logs.unshift(sessionLog);
+            localStorage.setItem('roverLogs', JSON.stringify(logs));
+            loadLogs();
+
+            document.getElementById('btnStart').disabled = false;
+            document.getElementById('btnEnd').disabled = true;
+            document.getElementById('btnEnd').className = "flex-1 bg-slate-800 text-slate-500 text-xs font-bold rounded-xl border border-slate-700 cursor-not-allowed";
+        }
+
+        function loadLogs() {
+            const table = document.getElementById('sessionLogTable');
+            let logs = JSON.parse(localStorage.getItem('roverLogs')) || [];
+            if (!logs.length) return;
+            table.innerHTML = "";
+            logs.forEach((l, i) => {
+                table.innerHTML += `<tr class="border-b border-slate-800"><td class="p-2.5 font-bold text-blue-400">#${logs.length - i}</td><td class="p-2.5">${l.date}</td><td class="p-2.5">${l.start}</td><td class="p-2.5">${l.end}</td><td class="p-2.5 text-emerald-400 font-bold">${l.duration}</td><td class="p-2.5 text-blue-400 font-bold">${l.distance}</td><td class="p-2.5 text-amber-400 font-bold">${l.maxGas}</td></tr>`;
+            });
+        }
+    </script>
+</body>
+</html>
